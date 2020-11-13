@@ -32,7 +32,19 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		const int attrByteOffset,
 		const Datatype attrType)
 {
-
+	// construct index name
+	std::ostringstream idxStr;
+	idxStr << relationName << '.' << attrByteOffest;
+	std::string indexName = idx.str(); // name of index file
+	outIndexName = indexName
+	// open index file if it exists
+	if (File::exists(indexName))
+	{
+		BlobFile indexFile = BlobFile::(indexName, false);
+	} else
+	{
+		BlobFile indexFile = BlobFile::open(indexName);
+	}
 }
 
 
