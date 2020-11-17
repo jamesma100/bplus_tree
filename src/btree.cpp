@@ -43,7 +43,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		BlobFile* indexFile = new BlobFile(indexName, false);
 	} else
 	{
-		BlobFile* indexFile = BlobFile::open(indexName);
+		BlobFile* indexFile = new BlobFile(indexName, true);
 	}
 }
 
