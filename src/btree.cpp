@@ -36,7 +36,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	std::ostringstream idxStr;
 	idxStr << relationName << '.' << attrByteOffest;
 	std::string indexName = idx.str(); // name of index file
-	outIndexName = indexName
+	outIndexName = indexName;
 	// open index file if it exists
 	if (File::exists(indexName))
 	{
