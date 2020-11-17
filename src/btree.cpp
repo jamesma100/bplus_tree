@@ -33,7 +33,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		const Datatype attrType)
 {
 	this->bufMgr = bufMgrIn;
-	this->attrByteOffset = attrByteOffeset;
+	this->attrByteOffset = attrByteOffset;
 	this->attributeType = attrType;
 
 	// construct index name
