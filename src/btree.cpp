@@ -78,6 +78,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 
 BTreeIndex::~BTreeIndex()
 {
+	bufMgr->flushFile(this->file);	// flushing the index file
 }
 
 // -----------------------------------------------------------------------------
