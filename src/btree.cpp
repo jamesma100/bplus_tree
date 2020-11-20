@@ -33,7 +33,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		const Datatype attrType)
 {
 	this->bufMgr = bufMgrIn;
-	this->attrByteOffset = attrByteOffeset;
+	this->attrByteOffset = attrByteOffset;
 	this->attributeType = attrType;
 
 	// construct index name
@@ -46,10 +46,29 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	if (File::exists(indexName))
 	{
 		BlobFile* indexFile = new BlobFile(indexName, false);
+		File* indexFileCastToFile = (File*) indexFile;
+		PageId metaPageNo = 1;
+		Page* metaPage;
+		this->BufMgr->readPage(indexFileCastToFile, metaPageNo, metaPage);
+		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage;
+
+		if (metaInfo->relationName != relationName || metaInfo->attrByteOffset != attrByteOffset
+				|| metaInfo->attrType != attrType)
+		{
+			this->bufMgr->unPinPage(indexFileCastToFile, metaPageNo, false);
+			throw BadIndexInfoException("Index file exists but metapage data don't match construction parameters");
+		}
+		this->headerPageNum = metaPageNo;
+		this->rootPageNum = metaInfo->rootPageNo;
+		this->file = indexFileCastToFile;
+		this->bufMgr->unPinPage(this->file, metaPageNo, false);
+		return;
+
 	} else
 	{
 		BlobFile* indexFile = new BlobFile(indexName, true);
 	}
+	
 }
 
 
