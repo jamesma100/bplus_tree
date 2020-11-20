@@ -46,12 +46,13 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	if (File::exists(indexName))
 	{
 		BlobFile* indexFile = new BlobFile(indexName, false);
-		File* indexFileCastToFile = (File*) indexFile;
+		File* indexFileCastToFile = (File*) indexFile; // cast indexFile to File object
 		PageId metaPageNo = 1;
 		Page* metaPage;
-		this->BufMgr->readPage(indexFileCastToFile, metaPageNo, metaPage);
-		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage;
-
+		this->bufMgr->readPage(indexFileCastToFile, metaPageNo, metaPage);
+		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage; 
+		
+		// check whether existing metapage data matches construction parameters
 		if (metaInfo->relationName != relationName || metaInfo->attrByteOffset != attrByteOffset
 				|| metaInfo->attrType != attrType)
 		{
@@ -62,11 +63,26 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		this->rootPageNum = metaInfo->rootPageNo;
 		this->file = indexFileCastToFile;
 		this->bufMgr->unPinPage(this->file, metaPageNo, false);
-		return;
 
 	} else
 	{
+		// create new index file
 		BlobFile* indexFile = new BlobFile(indexName, true);
+		File* indexFileCastToFile = (File*) indexFile;
+		// create meta page
+		PageId metaPageNo;
+		Page* metaPage;
+		// allocate meta info page
+		this->bufMgr->allocPage(this->file, metaPageNo, metaPage);
+		// first page of index file is meta page
+		// set page number of meta page
+		this->headerPageNum = metaPageNo;
+		// cast metaPage to IndexMetaInfo struct and set its variables 
+		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage;
+		relationName.copy(metaInfo->relationName,20,0);
+		metaInfo->attrByteOffset = attrByteOffset;
+		metaInfo->attrType = attrType;
+
 	}
 	
 }
