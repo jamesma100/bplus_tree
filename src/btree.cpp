@@ -83,6 +83,37 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		metaInfo->attrByteOffset = attrByteOffset;
 		metaInfo->attrType = attrType;
 
+		this->headerPageNum = metaPageNo;
+		PageId rootPageNo;
+		Page* rootPage;
+		this->bufMgr->allocPage(this->file, rootPageNo, rootPage);
+		// after alloc, rootPage need not be a page object
+		// so cast to leaf node
+		LeafNodeInt* rootPageCastToLeaf = (LeafNodeInt *) rootPage;
+		rootPageCastToLeaf->rightSibPageNo = -1;
+		this->bufMgr->unPinPage(this->file, rootPageNo, true);
+		this->rootPageNum = rootPageNo;
+		metaInfo->rootPageNo = rootPageNo;
+
+		FileScan* fScan = new FileScan(relationName, bufMgrIn);
+		try
+		{
+			RecordId scanRid;
+			while(1)
+			{
+				fScan->scanNext(scanRid);
+				std::string recordStr = fScan->getRecord();
+				const char *record = recordStr.c_str();
+				int key = *((int*)(record + attrByteOffset));
+				std::cout << "Extracted : " << key << std::endl;
+				// this->insertEntry(&key, scanRid);
+			}
+		}
+		catch(const EndOfFileException &e)
+		{
+			std::cout << "Read all records" << std::endl;
+		}
+		delete fScan;
 	}
 	
 }
