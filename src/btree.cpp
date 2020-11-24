@@ -35,6 +35,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	this->bufMgr = bufMgrIn;
 	this->attrByteOffset = attrByteOffset;
 	this->attributeType = attrType;
+	scanExecuting = false;
 
 	// construct index name
 	std::ostringstream idxStr;
@@ -125,7 +126,11 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 
 BTreeIndex::~BTreeIndex()
 {
+	if(scanExecuting == true) {
+		endScan();
+	}
 	bufMgr->flushFile(this->file);	// flushing the index file
+	delete this->file;
 }
 
 // -----------------------------------------------------------------------------
@@ -164,7 +169,11 @@ void BTreeIndex::scanNext(RecordId& outRid)
 //
 void BTreeIndex::endScan() 
 {
-
+	if(scanExecuting == false) {
+		throw ScanNotInitializedException();
+	} else {
+		scanExecuting = true;
+	}
 }
 
 void insertIntoLeaf(const void* key, const RecordId rid, const PageId pageNo)
