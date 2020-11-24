@@ -228,7 +228,6 @@ class BTreeIndex {
    */
 	int			nodeOccupancy;
 
-
 	// MEMBERS SPECIFIC TO SCANNING
 
   /**
@@ -364,7 +363,42 @@ class BTreeIndex {
 	 * @throws ScanNotInitializedException If no scan has been initialized.
 	**/
 	void endScan();
+
+	// ADDITIONAL METHODS
+	/**
+	 * Insert a key, rid pair into a leaf node
+	 * @param key key to insert
+	 * @param rid record id to insert
+	 * @param pageNo page number of the leaf node to insert into
+	 */
+	void insertIntoLeaf(const void* key, const RecordId rid, const PageId pageNo);
 	
+	/**
+	 * Insert a key, rid pair into a non-leaf node
+	 * @param key key to insert
+	 * @param rid record id to insert
+	 * @param pageNo page number of the leaf node to insert into
+	 */
+	void insertIntoNonLeaf(const void* key, const RecordId rid, const PageId pageNo);
+
+	/**
+	 * Split a leaf node into two when node is full and an insert is attempted
+	 * @param key key to insert
+	 * @param rid record id to insert
+	 * @param pageNo page number of leaf node to split
+	 */
+	void splitLeaf(const void* key, const RecordId rid, const PageId pageNo);
+	
+	/**
+	 * Split a non leaf (internal) node when pushup operation resulting from a
+	 * split from a lower level results in overflow in the non leaf node
+	 * @param key key to insert
+	 * @param rid record id to insert
+	 * @param pageNo page number of leaf node to split
+	 */
+	void splitNonLeaf(const void* key, const RecordId rid, const PageId pageNo);
+
+
 };
 
 }

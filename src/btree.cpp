@@ -90,7 +90,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		// after alloc, rootPage need not be a page object
 		// so cast to leaf node
 		LeafNodeInt* rootPageCastToLeaf = (LeafNodeInt *) rootPage;
-		rootPageCastToLeaf->rightSibPageNo = -1;
+		rootPageCastToLeaf->rightSibPageNo = Page::INVALID_NUMBER;
 		this->bufMgr->unPinPage(this->file, rootPageNo, true);
 		this->rootPageNum = rootPageNo;
 		metaInfo->rootPageNo = rootPageNo;
@@ -167,4 +167,11 @@ void BTreeIndex::endScan()
 
 }
 
+void insertIntoLeaf(const void* key, const RecordId rid, const PageId pageNo)
+{
+}
+
+void insertIntoNonLeaf(const void* key, const RecordId rid, const PageId pageNo)
+{
+}
 }
