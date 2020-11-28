@@ -155,6 +155,11 @@ struct NonLeafNodeInt{
    * Stores page numbers of child pages which themselves are other non-leaf/leaf nodes in the tree.
    */
 	PageId pageNoArray[ INTARRAYNONLEAFSIZE + 1 ];
+
+	/**
+	 * Number of keys currently in the non-key node
+	 */
+	int numKeys;
 };
 
 
@@ -177,6 +182,11 @@ struct LeafNodeInt{
 	 * This linking of leaves allows to easily move from one leaf to the next leaf during index scan.
    */
 	PageId rightSibPageNo;
+
+	/**
+	 * Number of keys currently in the leaf node
+	 */
+	int numKeys;
 };
 
 
@@ -228,6 +238,9 @@ class BTreeIndex {
    */
 	int			nodeOccupancy;
 
+	// additional fields
+	
+	bool rootIsLeaf;
 	// MEMBERS SPECIFIC TO SCANNING
 
   /**

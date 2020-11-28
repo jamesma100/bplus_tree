@@ -46,13 +46,16 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	// open index file if it exists; otherwise create one
 	if (File::exists(indexName))
 	{
-		BlobFile* indexFile = new BlobFile(indexName, false);
+		std::cout<< "index file exists\n";
+		BlobFile* indexFile = new BlobFile(outIndexName, false);
 		File* indexFileCastToFile = (File*) indexFile; // cast indexFile to File object
-		PageId metaPageNo = 1;
+		PageId metaPageNo = indexFile->getFirstPageNo(); // metaPage is first page
 		Page* metaPage;
 		this->bufMgr->readPage(indexFileCastToFile, metaPageNo, metaPage);
-		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage; 
-		
+		IndexMetaInfo* metaInfo = (struct IndexMetaInfo*) metaPage; 
+		std::cout<<"metaInfo->relationName: " <<metaInfo->relationName<<std::endl;
+		std::cout<<"relationName: " <<relationName<<std::endl;
+
 		// check whether existing metapage data matches construction parameters
 		if (metaInfo->relationName != relationName || metaInfo->attrByteOffset != attrByteOffset
 				|| metaInfo->attrType != attrType)
@@ -96,6 +99,8 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		this->rootPageNum = rootPageNo;
 		metaInfo->rootPageNo = rootPageNo;
 
+		// set level to 0 since root is leaf
+		this->rootIsLeaf = false;
 		FileScan* fScan = new FileScan(relationName, bufMgrIn);
 		try
 		{
@@ -139,7 +144,11 @@ BTreeIndex::~BTreeIndex()
 
 void BTreeIndex::insertEntry(const void *key, const RecordId rid) 
 {
-
+	if (this->rootIsLeaf == true)
+	{
+		this->insertIntoLeaf(key, rid, this->rootPageNum);
+		
+	}
 }
 
 // -----------------------------------------------------------------------------
@@ -176,11 +185,42 @@ void BTreeIndex::endScan()
 	}
 }
 
-void insertIntoLeaf(const void* key, const RecordId rid, const PageId pageNo)
+void BTreeIndex::insertIntoLeaf(const void* key, const RecordId rid, const PageId pageNo)
 {
+	Page* page;
+	this->bufMgr->readPage(this->file, pageNo, page);
+	LeafNodeInt* leafNode = (struct LeafNodeInt*)page;
+	int insertPosition;
+	if (leafNode->numKeys >= INTARRAYLEAFSIZE)
+	{
+		std::cout<<"no space available"<<std::endl;
+	}
+	else 
+	{
+		for (int i = 0; i < leafNode->numKeys; i++)
+		{
+			if (*((int*)key) > leafNode->keyArray[i])
+			{
+				insertPosition = i;
+				break;
+			}
+		}
+		for (int i = insertPosition; i < leafNode->numKeys; i++)
+		{
+			leafNode->keyArray[i+1] = leafNode->keyArray[i];
+		}
+		leafNode->keyArray[insertPosition] = *((int*)key);
+		for (int i = insertPosition; i < leafNode->numKeys; i++)
+		{
+			leafNode->ridArray[i+1] = leafNode->ridArray[i];
+		}
+		leafNode->ridArray[insertPosition] = rid;
+	}
+
+
 }
 
-void insertIntoNonLeaf(const void* key, const RecordId rid, const PageId pageNo)
+void BTreeIndex::insertIntoNonLeaf(const void* key, const RecordId rid, const PageId pageNo)
 {
 }
 }
