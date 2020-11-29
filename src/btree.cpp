@@ -35,7 +35,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	this->bufMgr = bufMgrIn;
 	this->attrByteOffset = attrByteOffset;
 	this->attributeType = attrType;
-	scanExecuting = false;
+	this->scanExecuting = false;
 
 	// construct index name
 	std::ostringstream idxStr;
@@ -43,18 +43,18 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	std::string indexName = idxStr.str(); // name of index file
 	outIndexName = indexName;
 
-	// open index file if it exists; otherwise create one
+	// open index file if it exists
 	if (File::exists(indexName))
 	{
 		std::cout<< "index file exists\n";
 		BlobFile* indexFile = new BlobFile(outIndexName, false);
 		File* indexFileCastToFile = (File*) indexFile; // cast indexFile to File object
-		PageId metaPageNo = indexFile->getFirstPageNo(); // metaPage is first page
+		PageId metaPageNo = indexFile->getFirstPageNo();
+		std::cout<<"metaPageNo: "<<metaPageNo<<std::endl;
 		Page* metaPage;
 		this->bufMgr->readPage(indexFileCastToFile, metaPageNo, metaPage);
-		IndexMetaInfo* metaInfo = (struct IndexMetaInfo*) metaPage; 
-		std::cout<<"metaInfo->relationName: " <<metaInfo->relationName<<std::endl;
-		std::cout<<"relationName: " <<relationName<<std::endl;
+		IndexMetaInfo* metaInfo = (struct IndexMetaInfo*) metaPage;
+		std::cout <<"metaInfo->rootPageNo: "<< metaInfo->rootPageNo<<std::endl;
 
 		// check whether existing metapage data matches construction parameters
 		if (metaInfo->relationName != relationName || metaInfo->attrByteOffset != attrByteOffset
@@ -71,25 +71,26 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	} else
 	{
 		// create new index file
+		std::cout<< "create new index file\n";
 		BlobFile* indexFile = new BlobFile(indexName, true);
 		File* indexFileCastToFile = (File*) indexFile;
 		// create meta page
-		PageId metaPageNo;
 		Page* metaPage;
+		PageId metaPageNo;
 		// allocate meta info page
 		this->bufMgr->allocPage(this->file, metaPageNo, metaPage);
 		// first page of index file is meta page
 		// set page number of meta page
 		this->headerPageNum = metaPageNo;
 		// cast metaPage to IndexMetaInfo struct and set its variables 
-		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage;
-		relationName.copy(metaInfo->relationName,20,0);
+		IndexMetaInfo* metaInfo = (struct IndexMetaInfo*) metaPage;
+		
 		metaInfo->attrByteOffset = attrByteOffset;
 		metaInfo->attrType = attrType;
-
-		this->headerPageNum = metaPageNo;
-		PageId rootPageNo;
+		strcpy(metaInfo->relationName, relationName.c_str());
+		
 		Page* rootPage;
+		PageId rootPageNo;
 		this->bufMgr->allocPage(this->file, rootPageNo, rootPage);
 		// after alloc, rootPage need not be a page object
 		// so cast to leaf node
@@ -98,9 +99,9 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		this->bufMgr->unPinPage(this->file, rootPageNo, true);
 		this->rootPageNum = rootPageNo;
 		metaInfo->rootPageNo = rootPageNo;
-
+		this->bufMgr->unPinPage(this->file, metaPageNo, true);
 		// set level to 0 since root is leaf
-		this->rootIsLeaf = false;
+		this->rootIsLeaf = true;
 		FileScan* fScan = new FileScan(relationName, bufMgrIn);
 		try
 		{
@@ -121,7 +122,6 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		}
 		delete fScan;
 	}
-	
 }
 
 
@@ -134,7 +134,7 @@ BTreeIndex::~BTreeIndex()
 	if(scanExecuting == true) {
 		endScan();
 	}
-	bufMgr->flushFile(this->file);	// flushing the index file
+	this->bufMgr->flushFile(this->file);	// flushing the index file
 	delete this->file;
 }
 
@@ -147,8 +147,8 @@ void BTreeIndex::insertEntry(const void *key, const RecordId rid)
 	if (this->rootIsLeaf == true)
 	{
 		this->insertIntoLeaf(key, rid, this->rootPageNum);
-		
 	}
+
 }
 
 // -----------------------------------------------------------------------------
@@ -193,11 +193,14 @@ void BTreeIndex::insertIntoLeaf(const void* key, const RecordId rid, const PageI
 	int insertPosition;
 	if (leafNode->numKeys >= INTARRAYLEAFSIZE)
 	{
-		std::cout<<"no space available"<<std::endl;
+		std::cout<<"Insert into leaf attempted: no space available, split needed\n"<<std::endl;
+		this->splitLeaf(key, rid, pageNo);
+
 	}
 	else 
 	{
-		for (int i = 0; i < leafNode->numKeys; i++)
+		int i;
+		for (i = 0; i < leafNode->numKeys; i++)
 		{
 			if (*((int*)key) > leafNode->keyArray[i])
 			{
@@ -205,12 +208,12 @@ void BTreeIndex::insertIntoLeaf(const void* key, const RecordId rid, const PageI
 				break;
 			}
 		}
-		for (int i = insertPosition; i < leafNode->numKeys; i++)
+		for (i = insertPosition; i < leafNode->numKeys; i++)
 		{
 			leafNode->keyArray[i+1] = leafNode->keyArray[i];
 		}
 		leafNode->keyArray[insertPosition] = *((int*)key);
-		for (int i = insertPosition; i < leafNode->numKeys; i++)
+		for (i = insertPosition; i < leafNode->numKeys; i++)
 		{
 			leafNode->ridArray[i+1] = leafNode->ridArray[i];
 		}
@@ -221,6 +224,9 @@ void BTreeIndex::insertIntoLeaf(const void* key, const RecordId rid, const PageI
 }
 
 void BTreeIndex::insertIntoNonLeaf(const void* key, const RecordId rid, const PageId pageNo)
+{
+}
+void BTreeIndex::splitLeaf(const void* key, const RecordId rid, const PageId pageNo)
 {
 }
 }
