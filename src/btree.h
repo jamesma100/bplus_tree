@@ -155,6 +155,7 @@ struct NonLeafNodeInt{
    * Stores page numbers of child pages which themselves are other non-leaf/leaf nodes in the tree.
    */
 	PageId pageNoArray[ INTARRAYNONLEAFSIZE + 1 ];
+
 };
 
 
@@ -290,7 +291,6 @@ class BTreeIndex {
    */
 	Operator	highOp;
 	struct IndexMetaInfo metaInfo {};
-
 	
  public:
 

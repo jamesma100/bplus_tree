@@ -18,14 +18,6 @@
 
 
 //#define DEBUG
-
-namespace badgerdb
-{
-
-// -----------------------------------------------------------------------------
-// BTreeIndex::BTreeIndex -- Constructor
-// -----------------------------------------------------------------------------
-
 namespace badgerdb
 {
 
@@ -92,6 +84,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		// cast metaPage to IndexMetaInfo struct and set its variables 
 		IndexMetaInfo* metaInfo = (struct IndexMetaInfo*) metaPage;
 		
+		std::cout<<"relationName: "<< relationName << std::endl;
 		metaInfo->attrByteOffset = attrByteOffset;
 		metaInfo->attrType = attrType;
 		strcpy(metaInfo->relationName, relationName.c_str());
@@ -107,8 +100,6 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		this->rootPageNum = rootPageNo;
 		metaInfo->rootPageNo = rootPageNo;
 		this->bufMgr->unPinPage(this->file, metaPageNo, true);
-		// set level to 0 since root is leaf
-		this->rootIsLeaf = true;
 		FileScan* fScan = new FileScan(relationName, bufMgrIn);
 		try
 		{
@@ -227,7 +218,77 @@ void BTreeIndex::startScan(const void* lowValParm,
 				   const void* highValParm,
 				   const Operator highOpParm)
 {
+	if (this->scanExecuting == true)
+	{
+		this->endScan();
+	}
+	if ((lowOpParm!=GT && lowOpParm!=GTE) || (highOpParm!=LT && highOpParm!=LTE))
+	{
+		throw BadOpcodesException();
+	}
+	
+	if (this->attributeType == INTEGER)
+	{
+		if (*((int*) lowValParm) > *((int*) highValParm))
+		{
+			throw BadScanrangeException();
+		}
+		this->lowValInt = *((int*) lowValParm);
+		this->highValInt = *((int*) highValParm);
+	}
+	else if (this->attributeType == DOUBLE)
+	{
+		if (*((double*) lowValParm) > *((double*) highValParm))
+		{
+			throw BadScanrangeException();
+		}
+		this->lowValDouble = *((double*) lowValParm);
+		this->highValDouble = *((double*) highValParm);
+	}
+	// how to compare strings?
+	else if (this->attributeType == STRING)
+	{
+		if (*((char*) lowValParm) > *((char*) highValParm))
+                {
+                        throw BadScanrangeException();
+                }
+                this->lowValDouble = *((char*) lowValParm);
+                this->highValDouble = *((char*) highValParm);
+	}
 
+	NonLeafNodeInt* currentNode;
+	// if root is leaf, root is the node we will search
+	if (this->isLeaf(this->rootPageNum) == true)
+	{
+		this->currentPageNum = this->rootPageNum;
+		
+	}
+	else
+	{
+		this->currentPageNum = this->rootPageNum; // start searching from root
+		// traverse tree until leaf is found
+		while (this->isLeaf(this->currentPageNum) == false)
+		{
+			this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
+			currentNode = (struct NonLeafNodeInt*) this->currentPageData;
+			for (int i = 0; i < INTARRAYNONLEAFSIZE; i++)
+			{
+				if (this->lowValInt >= currentNode->keyArray[i])
+				{
+					this->currentPageNum = currentNode->pageNoArray[i+1];
+					break;
+				}	
+				continue;
+			}
+		}
+	}
+	if (this->currentPageNum == 0)
+	{
+		throw NoSuchKeyFoundException();
+	}
+	// save leaf node in this->currentPageData
+	this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
+	this->nextEntry = 0;
 }
 
 // -----------------------------------------------------------------------------
@@ -236,7 +297,33 @@ void BTreeIndex::startScan(const void* lowValParm,
 
 void BTreeIndex::scanNext(RecordId& outRid) 
 {
-
+	if (this->scanExecuting == false)
+	{
+		throw ScanNotInitializedException();
+	}
+	LeafNodeInt* currentNode = (struct LeafNodeInt*) this->currentPageData;
+	// finish scanning current node, so move to right sibling
+	if (this->nextEntry+1 >= INTARRAYLEAFSIZE)
+	{
+		this->currentPageNum = currentNode->rightSibPageNo;
+		this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
+		currentNode = (struct LeafNodeInt*)this->currentPageData;
+		this->nextEntry = 0; // start searching from beginning of new node
+	}
+	else
+	{
+		this->nextEntry++;
+	}
+	// found key entry that exists and satisfies scan criteria
+	// save corresponding record in outRid
+	if (currentNode->keyArray[nextEntry] && currentNode->keyArray[nextEntry] <= this->highValInt)
+	{
+		outRid = currentNode->ridArray[nextEntry];
+	}
+	else
+	{
+		throw IndexScanCompletedException();
+	}	
 }
 
 // -----------------------------------------------------------------------------
@@ -412,6 +499,5 @@ PageId BTreeIndex::splitNonLeaf(NonLeafNodeInt *nonLeafNode,int splitIndex){
 	//two nonleafode will be in the same level after split
 	newNonLeafNode->level=nonLeafNode->level;
 	return newPageId;
-}
 }
 }
