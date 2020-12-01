@@ -47,28 +47,31 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	{
 		std::cout<< "index file exists\n";
 		BlobFile* indexFile = new BlobFile(outIndexName, false);
+		// read existing metapage
 		File* indexFileCastToFile = (File*) indexFile; // cast indexFile to File object
 		Page* metaPage;
-		this->bufMgr->readPage(indexFileCastToFile, 1, metaPage);
+		PageId metaPageNo = 1; 
+		this->bufMgr->readPage(indexFileCastToFile, metaPageNo, metaPage);
 		metaInfo = (IndexMetaInfo*) metaPage;
 		std::cout<<"reached metapage check\n";
 		std::cout<<"metaInfo relationName: " << metaInfo->relationName[0] <<std::endl;
+		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage;
+		std::cout<<metaInfo->relationName<<std::endl;
 		// check whether existing metapage data matches construction parameters
+		std::cout<< "Check started\n";
 		if (metaInfo->relationName != relationName || metaInfo->attrByteOffset != attrByteOffset
 				|| metaInfo->attrType != attrType)
 		{
-			this->bufMgr->unPinPage(indexFileCastToFile, 1, false);
+			std::cout<< "Enter if statement\n";
+			this->bufMgr->unPinPage(indexFileCastToFile, metaPageNo, false);
 			throw BadIndexInfoException("Index file exists but metapage data don't match construction parameters");
 		}
-		std::cout<<"passed metapage check\n";
+		std::cout<< "Check ended\n";
 		this->headerPageNum = 1;
 		this->rootPageNum = metaInfo->rootPageNo;
-                std::cout<<"rootPageNo: " << this->rootPageNum<<std::endl;
-                std::cout <<"metaPageNum: " << this->headerPageNum<<std::endl;
-
 
 		this->file = indexFileCastToFile;
-		this->bufMgr->unPinPage(this->file,1, false);
+		this->bufMgr->unPinPage(this->file, metaPageNo, false);
 
 	} else
 	{
@@ -103,11 +106,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		this->bufMgr->unPinPage(this->file, rootPageNo, true);
 		this->bufMgr->unPinPage(this->file, metaPageNo, true);
 		FileScan* fScan = new FileScan(relationName, bufMgrIn);
-		// print tests
-		std::cout << "metaPageNo: " << this->headerPageNum << std::endl;
-		std::cout << "rootPageNo " << this->rootPageNum << std::endl;
-		std:: cout << "metaInfo->relationName " <<metaInfo->relationName[0]<<std::endl;
- 
+		
 		try
 		{
 			RecordId scanRid;
