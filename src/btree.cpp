@@ -151,7 +151,7 @@ BTreeIndex::~BTreeIndex()
 void BTreeIndex::insertEntry(const void *key, const RecordId rid) 
 {
 	
-	insertHelper(metaInfo.rootPageNo,*(int *)key,rid,0);
+	insertHelper(metaInfo->rootPageNo,*(int *)key,rid,0);
 }
 void BTreeIndex::insertHelper(PageId pageNo,int key,RecordId rid, PageId newChildPageNo){
 	Page *page;
@@ -186,14 +186,14 @@ void BTreeIndex::insertHelper(PageId pageNo,int key,RecordId rid, PageId newChil
 				NonLeafNodeInt* newChildNode = (NonLeafNodeInt*) newChildPage;
 				newChildPageNo = insertIntoNonLeaf(currentNode,newChildNode->keyArray[0],newChildPageNo);
 				//current Node is root, build a new node
-				if(metaInfo.rootPageNo==pageNo){
+				if(metaInfo->rootPageNo==pageNo){
 					NonLeafNodeInt* newRootNode;
 					PageId newRootPageNo;
 					bufMgr->allocPage(file,newRootPageNo,(Page *&)newRootNode);	
 					newRootNode->keyArray[0] = newChildNode->keyArray[0];
 					newRootNode->pageNoArray[0]=pageNo;
 					newRootNode->pageNoArray[1]=newChildPageNo;
-					metaInfo.rootPageNo = newRootPageNo;
+					metaInfo->rootPageNo = newRootPageNo;
 				}
 				if(currentNode->level==1){
 					//copy up, no need to change original child node
