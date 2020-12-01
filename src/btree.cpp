@@ -48,31 +48,35 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		std::cout<< "index file exists\n";
 		BlobFile* indexFile = new BlobFile(outIndexName, false);
 		File* indexFileCastToFile = (File*) indexFile; // cast indexFile to File object
-		PageId metaPageNo = indexFile->getFirstPageNo();
-		std::cout<<"metaPageNo: "<<metaPageNo<<std::endl;
 		Page* metaPage;
-		this->bufMgr->readPage(indexFileCastToFile, metaPageNo, metaPage);
-		IndexMetaInfo* metaInfo = (struct IndexMetaInfo*) metaPage;
-		std::cout <<"metaInfo->rootPageNo: "<< metaInfo->rootPageNo<<std::endl;
-
+		this->bufMgr->readPage(indexFileCastToFile, 1, metaPage);
+		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage;
+		std::cout<<"reached metapage check\n";
+		std::cout<<"metaInfo relationName: " << metaInfo->relationName[0] <<std::endl;
 		// check whether existing metapage data matches construction parameters
 		if (metaInfo->relationName != relationName || metaInfo->attrByteOffset != attrByteOffset
 				|| metaInfo->attrType != attrType)
 		{
-			this->bufMgr->unPinPage(indexFileCastToFile, metaPageNo, false);
+			this->bufMgr->unPinPage(indexFileCastToFile, 1, false);
 			throw BadIndexInfoException("Index file exists but metapage data don't match construction parameters");
 		}
-		this->headerPageNum = metaPageNo;
+		std::cout<<"passed metapage check\n";
+		this->headerPageNum = 1;
 		this->rootPageNum = metaInfo->rootPageNo;
+                std::cout<<"rootPageNo: " << this->rootPageNum<<std::endl;
+                std::cout <<"metaPageNum: " << this->headerPageNum<<std::endl;
+
+
 		this->file = indexFileCastToFile;
-		this->bufMgr->unPinPage(this->file, metaPageNo, false);
+		this->bufMgr->unPinPage(this->file,1, false);
 
 	} else
 	{
 		// create new index file
-		std::cout<< "create new index file\n";
+		std::cout<< "Create new index file\n";
 		BlobFile* indexFile = new BlobFile(indexName, true);
 		File* indexFileCastToFile = (File*) indexFile;
+		this->file = indexFileCastToFile;
 		// create meta page
 		Page* metaPage;
 		PageId metaPageNo;
@@ -83,24 +87,27 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		this->headerPageNum = metaPageNo;
 		// cast metaPage to IndexMetaInfo struct and set its variables 
 		IndexMetaInfo* metaInfo = (struct IndexMetaInfo*) metaPage;
-		
-		std::cout<<"relationName: "<< relationName << std::endl;
 		metaInfo->attrByteOffset = attrByteOffset;
 		metaInfo->attrType = attrType;
 		strcpy(metaInfo->relationName, relationName.c_str());
-		
+		// allocate page for root
 		Page* rootPage;
 		PageId rootPageNo;
 		this->bufMgr->allocPage(this->file, rootPageNo, rootPage);
+		this->rootPageNum = rootPageNo;
+		metaInfo->rootPageNo = rootPageNo;
 		// after alloc, rootPage need not be a page object
 		// so cast to leaf node
 		LeafNodeInt* rootPageCastToLeaf = (LeafNodeInt *) rootPage;
 		rootPageCastToLeaf->rightSibPageNo = Page::INVALID_NUMBER;
 		this->bufMgr->unPinPage(this->file, rootPageNo, true);
-		this->rootPageNum = rootPageNo;
-		metaInfo->rootPageNo = rootPageNo;
 		this->bufMgr->unPinPage(this->file, metaPageNo, true);
 		FileScan* fScan = new FileScan(relationName, bufMgrIn);
+		// print tests
+		std::cout << "metaPageNo: " << this->headerPageNum << std::endl;
+		std::cout << "rootPageNo " << this->rootPageNum << std::endl;
+		std:: cout << "metaInfo->relationName " <<metaInfo->relationName[0]<<std::endl;
+ 
 		try
 		{
 			RecordId scanRid;
@@ -111,7 +118,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 				const char *record = recordStr.c_str();
 				int key = *((int*)(record + attrByteOffset));
 				std::cout << "Extracted : " << key << std::endl;
-				// this->insertEntry(&key, scanRid);
+				this->insertEntry(&key, scanRid);
 			}
 		}
 		catch(const EndOfFileException &e)
@@ -226,35 +233,13 @@ void BTreeIndex::startScan(const void* lowValParm,
 	{
 		throw BadOpcodesException();
 	}
+	if (*((int*) lowValParm) > *((int*) highValParm))
+	{
+		throw BadScanrangeException();
+	}
+	this->lowValInt = *((int*) lowValParm);
+	this->highValInt = *((int*) highValParm);
 	
-	if (this->attributeType == INTEGER)
-	{
-		if (*((int*) lowValParm) > *((int*) highValParm))
-		{
-			throw BadScanrangeException();
-		}
-		this->lowValInt = *((int*) lowValParm);
-		this->highValInt = *((int*) highValParm);
-	}
-	else if (this->attributeType == DOUBLE)
-	{
-		if (*((double*) lowValParm) > *((double*) highValParm))
-		{
-			throw BadScanrangeException();
-		}
-		this->lowValDouble = *((double*) lowValParm);
-		this->highValDouble = *((double*) highValParm);
-	}
-	// how to compare strings?
-	else if (this->attributeType == STRING)
-	{
-		if (*((char*) lowValParm) > *((char*) highValParm))
-                {
-                        throw BadScanrangeException();
-                }
-                this->lowValDouble = *((char*) lowValParm);
-                this->highValDouble = *((char*) highValParm);
-	}
 
 	NonLeafNodeInt* currentNode;
 	// if root is leaf, root is the node we will search
