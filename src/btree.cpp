@@ -50,7 +50,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		File* indexFileCastToFile = (File*) indexFile; // cast indexFile to File object
 		Page* metaPage;
 		this->bufMgr->readPage(indexFileCastToFile, 1, metaPage);
-		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage;
+		metaInfo = (IndexMetaInfo*) metaPage;
 		std::cout<<"reached metapage check\n";
 		std::cout<<"metaInfo relationName: " << metaInfo->relationName[0] <<std::endl;
 		// check whether existing metapage data matches construction parameters
@@ -86,7 +86,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		// set page number of meta page
 		this->headerPageNum = metaPageNo;
 		// cast metaPage to IndexMetaInfo struct and set its variables 
-		IndexMetaInfo* metaInfo = (struct IndexMetaInfo*) metaPage;
+		metaInfo = (struct IndexMetaInfo*) metaPage;
 		metaInfo->attrByteOffset = attrByteOffset;
 		metaInfo->attrType = attrType;
 		strcpy(metaInfo->relationName, relationName.c_str());
