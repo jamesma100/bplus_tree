@@ -50,7 +50,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		// read existing metapage
 		File* indexFileCastToFile = (File*) indexFile; // cast indexFile to File object
 		Page* metaPage;
-		PageId metaPageNo = 1; 
+		PageId metaPageNo = indexFile->getFirstPageNo(); 
 		this->bufMgr->readPage(indexFileCastToFile, metaPageNo, metaPage);
 		metaInfo = (IndexMetaInfo*) metaPage;
 		std::cout<<"reached metapage check\n";
@@ -67,7 +67,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 			throw BadIndexInfoException("Index file exists but metapage data don't match construction parameters");
 		}
 		std::cout<< "Check ended\n";
-		this->headerPageNum = 1;
+		this->headerPageNum = metaPageNo;
 		this->rootPageNum = metaInfo->rootPageNo;
 
 		this->file = indexFileCastToFile;
@@ -279,7 +279,7 @@ void BTreeIndex::startScan(const void* lowValParm,
 	}
 	// save leaf node in this->currentPageData
 	this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
-	this->nextEntry = 0;
+	this->nextEntry = 0; // just initialized scan, so next entry to insert is at slot 0 of page
 }
 
 // -----------------------------------------------------------------------------
@@ -296,9 +296,12 @@ void BTreeIndex::scanNext(RecordId& outRid)
 	//read from currentNode
 	LeafNodeInt* currentNode = (LeafNodeInt*) this->currentPageData;
 	std::cout << "currentNode->keyArray[0]: "<< currentNode->keyArray[0] << std::endl;
+	// next entry still satisfies criteria
 	if (currentNode->keyArray[nextEntry] <= this->highValInt)
 	{
-		outRid = currentNode->ridArray[nextEntry];
+		outRid.page_number = this->currentPageNum;
+		outRid.slot_number = this->nextEntry;
+		//outRid = currentNode->ridArray[nextEntry];
 		std::cout << "outRid pageNo: "<< outRid.page_number << std::endl;
 	}
 	else
