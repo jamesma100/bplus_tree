@@ -131,8 +131,9 @@ struct IndexMetaInfo{
 };
 
 /*
-Each node is a page, so once we read the page in we just cast the pointer to the page to this struct and use it to access the parts
-These structures basically are the format in which the information is stored in the pages for the index file depending on what kind of 
+Each node is a page, so once we read the page in we just cast the pointer to the 
+page to this struct and use it to access the parts. These structures basically are the 
+format in which the information is stored in the pages for the index file depending on what kind of 
 node they are. The level memeber of each non leaf structure seen below is set to 1 if the nodes 
 at this level are just above the leaf nodes. Otherwise set to 0.
 */
@@ -155,7 +156,6 @@ struct NonLeafNodeInt{
    * Stores page numbers of child pages which themselves are other non-leaf/leaf nodes in the tree.
    */
 	PageId pageNoArray[ INTARRAYNONLEAFSIZE + 1 ];
-
 };
 
 
@@ -163,6 +163,7 @@ struct NonLeafNodeInt{
  * @brief Structure for all leaf nodes when the key is of INTEGER type.
 */
 struct LeafNodeInt{
+	int level = -1;
   /**
    * Stores keys.
    */
@@ -291,6 +292,7 @@ class BTreeIndex {
    */
 	Operator	highOp;
 	IndexMetaInfo* metaInfo;
+
 	
  public:
 
@@ -304,7 +306,8 @@ class BTreeIndex {
    * @param bufMgrIn						Buffer Manager Instance
    * @param attrByteOffset			Offset of attribute, over which index is to be built, in the record
    * @param attrType						Datatype of attribute over which index is built
-   * @throws  BadIndexInfoException     If the index file already exists for the corresponding attribute, but values in metapage(relationName, attribute byte offset, attribute type etc.) do not match with values received through constructor parameters.
+   * @throws  BadIndexInfoException     If the index file already exists for the corresponding attribute,
+   *  but values in metapage(relationName, attribute byte offset, attribute type etc.) do not match with values received through constructor parameters.
    */
 	BTreeIndex(const std::string & relationName, std::string & outIndexName,
 						BufMgr *bufMgrIn,	const int attrByteOffset,	const Datatype attrType);
