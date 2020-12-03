@@ -125,6 +125,12 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		{
 			std::cout << "Read all records" << std::endl;
 		}
+		std::cout << "End of constructor\n";
+		std::cout << "Root page num: " << this->rootPageNum << std::endl;
+		std::cout << "Tree data\n";
+		
+		this->bufMgr->readPage(this->file, rootPageNo, rootPage);
+		std::cout << "keyArray[0]: " << ((NonLeafNodeInt*)rootPage)->keyArray[0];
 		delete fScan;
 	}
 }
