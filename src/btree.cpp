@@ -158,10 +158,10 @@ void BTreeIndex::insertHelper(PageId pageNo,int key,RecordId rid, PageId newChil
 	//leaf Node
 
 	if(isLeaf(pageNo)){
-		std::cout << "LeafRecNo(currentNode): "<<leafNodeRecNo((LeafNodeInt*)page) << std::endl;
+		//std::cout << "LeafRecNo(currentNode): "<<leafNodeRecNo((LeafNodeInt*)page) << std::endl;
 		newChildPageNo = insertIntoLeaf((LeafNodeInt*)page,key,rid,pageNo);
 		if(newChildPageNo!=0 && metaInfo.rootPageNo == pageNo){
-		std::cout << "555" << std::endl;
+		std::cout << "split leaf which is also root" << std::endl;
 			Page *newChildPage;
 			bufMgr->readPage(file,newChildPageNo,newChildPage);
 			LeafNodeInt* newChildNode = (LeafNodeInt*) newChildPage;
