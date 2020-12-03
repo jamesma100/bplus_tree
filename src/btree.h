@@ -291,7 +291,7 @@ class BTreeIndex {
    * High Operator. Can only be LT(<) or LTE(<=).
    */
 	Operator	highOp;
-	IndexMetaInfo* metaInfo;
+	struct IndexMetaInfo metaInfo {};
 
 	
  public:
@@ -406,6 +406,6 @@ class BTreeIndex {
 	bool isLeafFull(LeafNodeInt *leafNode);
 	bool isNonLeafFull(NonLeafNodeInt *nonLeafNode);
 	bool isLeaf(PageId pageNo);
-	void insertHelper(PageId pageId,int key,RecordId rid,PageId newPageNo);
+	PageId insertHelper(PageId pageId,int key,RecordId rid,PageId newPageNo);
 };
 }
