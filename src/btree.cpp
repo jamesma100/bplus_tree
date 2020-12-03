@@ -524,20 +524,24 @@ int BTreeIndex::nonLeafNodeRecNo(NonLeafNodeInt *nonLeafNode){
 return count;
 }
 PageId BTreeIndex::splitLeaf(LeafNodeInt *leafNode,int splitIndex){
+std::cout << "splitLeaf" << std::endl;
 	PageId newPageId;
 	LeafNodeInt *newLeafNode;
 	bufMgr->allocPage(file, newPageId, (Page *&)newLeafNode);
   	memset(newLeafNode, 0, sizeof(LeafNodeInt));
-	for(int i=splitIndex;i<=leafNodeRecNo(leafNode);i++){
+
+	for(int i=splitIndex;i<INTARRAYLEAFSIZE;i++){
+		std::cout << "1111111111111: "<< i << std::endl;
 		//copy data to newLeafNode
 		newLeafNode->keyArray[i-splitIndex]=leafNode->keyArray[i];
-		std::cout << "newLeafNode->keyArray[i-splitIndex]: "<<newLeafNode->keyArray[i-splitIndex] << std::endl;
+		//std::cout << "newLeafNode->keyArray[i-splitIndex]: "<<newLeafNode->keyArray[i-splitIndex] << std::endl;
 		newLeafNode->ridArray[i-splitIndex]=leafNode->ridArray[i];
 		//remove from old leafNode
 		leafNode->keyArray[i]=0;
 		leafNode->ridArray[i].page_number=0;
 		leafNode->ridArray[i].slot_number=0;
 	}
+	
 	// //copy to new node
   	// memcpy(&newLeafNode->keyArray, &leafNode->keyArray[splitIndex], (INTARRAYLEAFSIZE - splitIndex) * sizeof(int));
   	// memcpy(&newLeafNode->ridArray, &leafNode->ridArray[splitIndex], (INTARRAYLEAFSIZE - splitIndex) * sizeof(RecordId));
