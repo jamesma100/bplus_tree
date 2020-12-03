@@ -245,14 +245,16 @@ void BTreeIndex::startScan(const void* lowValParm,
 	}
 	this->lowValInt = *((int*) lowValParm);
 	this->highValInt = *((int*) highValParm);
-	
+	this->lowOp = lowOpParm;
+	this->highOp = highOpParm;
 
 	NonLeafNodeInt* currentNode;
+	// find the leaf ndoe to begin search
 	// if root is leaf, root is the node we will search
 	if (this->isLeaf(this->rootPageNum) == true)
 	{
 		this->currentPageNum = this->rootPageNum;
-		
+		this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
 	}
 	else
 	{
@@ -262,15 +264,35 @@ void BTreeIndex::startScan(const void* lowValParm,
 		{
 			this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
 			currentNode = (struct NonLeafNodeInt*) this->currentPageData;
-			for (int i = 0; i < INTARRAYNONLEAFSIZE; i++)
+			for (int i = 0; i < nonLeafNodeRecNo(currentNode); i++)
 			{
-				if (this->lowValInt >= currentNode->keyArray[i])
+				if (lowOpParm == GT)
 				{
-					this->currentPageNum = currentNode->pageNoArray[i+1];
+					if (currentNode->keyArray[i] <= this->lowValInt)
+					{
+						this->currentPageNum = currentNode->pageNoArray[i+1];
+					}
+					else 
+					{
+						this->currentPageNum = currentNode->pageNoArray[i];
+					}
+					this->bufMgr->unPinPage(this->file,currentNode->pageNoArray[i],false);
+					break;
 				}
-				this->bufMgr->unPinPage(this->file,currentNode->pageNoArray[i],false);
+				else if (lowOpParm == GTE)
+				{
+					if (currentNode->keyArray[i] < this->lowValInt)
+					{
+						this->currentPageNum = currentNode->pageNoArray[i+1];
+					}
+					else
+					{
+						this->currentPageNum = currentNode->pageNoArray[i];
+					this->bufMgr->unPinPage(this->file, currentNode->pageNoArray[i], false);
+					}
+					break;
+				}
 			}
-			
 		}
 	}
 	if (this->currentPageNum == 0)
