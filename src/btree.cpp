@@ -98,6 +98,7 @@ std::cout<<"if: root pageNo: " <<  metaInfo->rootPageNo<<std::endl;
 		this->bufMgr->allocPage(this->file, rootPageNo, rootPage);
 		this->rootPageNum = rootPageNo;
 		metaInfo.rootPageNo = rootPageNo;
+		this->rootPageNum = rootPageNo;
 		// after alloc, rootPage need not be a page object
 		// so cast to leaf node
 		LeafNodeInt* rootPageCastToLeaf = (LeafNodeInt *) rootPage;
@@ -167,6 +168,7 @@ PageId BTreeIndex::insertHelper(PageId pageNo,int key,RecordId rid, PageId newCh
 			bufMgr->allocPage(file,newRootPageNo,newRootPage);
 			NonLeafNodeInt* newRootNode = (NonLeafNodeInt*) newRootPage;
 			metaInfo.rootPageNo = newRootPageNo;
+			this->rootPageNum=newRootPageNo;
 			newRootNode->level = 1;
 			newRootNode->keyArray[0] = newChildNode->keyArray[0];
 			newRootNode->pageNoArray[0]=pageNo;
@@ -225,6 +227,7 @@ PageId BTreeIndex::insertHelper(PageId pageNo,int key,RecordId rid, PageId newCh
 					newRootNode->pageNoArray[0]=pageNo;
 					newRootNode->pageNoArray[1]=newChildPageNo;
 					metaInfo.rootPageNo = newRootPageNo;
+					this->rootPageNum = newRootPageNo;
 					if(isLeaf(pageNo)){
 						newRootNode->level=1;
 					}else{
