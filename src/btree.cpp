@@ -16,7 +16,6 @@
 #include "exceptions/file_not_found_exception.h"
 #include "exceptions/end_of_file_exception.h"
 
-
 //#define DEBUG
 namespace badgerdb
 {
@@ -43,39 +42,39 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	outIndexName = indexName;
 
 	// open index file if it exists
-// 	if (File::exists(indexName))
-// 	{
-// 		relationName.copy(metaInfo.relationName, 20, 0);
-// 		std::cout<< "index file exists\n";
-// 		BlobFile* indexFile = new BlobFile(outIndexName, false);
-// 		// read existing metapage
-// 		File* indexFileCastToFile = (File*) indexFile; // cast indexFile to File object
-// 		Page* metaPage;
-// 		PageId metaPageNo = indexFile->getFirstPageNo(); 
-// 		this->bufMgr->readPage(indexFileCastToFile, metaPageNo, metaPage);
-// 		std::cout<<"reached metapage check\n";
-// 		std::cout<<"metaInfo relationName: " << metaInfo.relationName[0] <<std::endl;
-// 		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage;
-// 		std::cout<<metaInfo->relationName<<std::endl;
-// 		// check whether existing metapage data matches construction parameters
-// 		std::cout<< "Check started\n";
-// 		if (metaInfo->relationName != relationName || metaInfo->attrByteOffset != attrByteOffset
-// 				|| metaInfo->attrType != attrType)
-// 		{
-// 			std::cout<< "Enter if statement\n";
-// 			this->bufMgr->unPinPage(indexFileCastToFile, metaPageNo, false);
-// 			throw BadIndexInfoException("Index file exists but metapage data don't match construction parameters");
-// 		}
-// 		std::cout<< "Check ended\n";
-// 		this->headerPageNum = metaPageNo;
-// 		this->rootPageNum = metaInfo->rootPageNo;
-// std::cout<<"if: metaInfo pageNo: " << metaPageNo <<std::endl;
-// std::cout<<"if: root pageNo: " <<  metaInfo->rootPageNo<<std::endl;
-// 		this->file = indexFileCastToFile;
-// 		this->bufMgr->unPinPage(this->file, metaPageNo, false);
+ 	if (File::exists(indexName))
+	{
+		relationName.copy(metaInfo.relationName, 20, 0);
+		std::cout<< "index file exists\n";
+		BlobFile* indexFile = new BlobFile(outIndexName, false);
+		// read existing metapage
+		File* indexFileCastToFile = (File*) indexFile; // cast indexFile to File object
+		Page* metaPage;
+		PageId metaPageNo = indexFile->getFirstPageNo(); 
+		this->bufMgr->readPage(indexFileCastToFile, metaPageNo, metaPage);
+		std::cout<<"reached metapage check\n";
+		std::cout<<"metaInfo relationName: " << metaInfo.relationName[0] <<std::endl;
+		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage;
+		std::cout<<metaInfo->relationName<<std::endl;
+		// check whether existing metapage data matches construction parameters
+		std::cout<< "Check started\n";
+		if (metaInfo->relationName != relationName || metaInfo->attrByteOffset != attrByteOffset
+				|| metaInfo->attrType != attrType)
+		{
+			std::cout<< "Enter if statement\n";
+			this->bufMgr->unPinPage(indexFileCastToFile, metaPageNo, false);
+			throw BadIndexInfoException("Index file exists but metapage data don't match construction parameters");
+		}
+		std::cout<< "Check ended\n";
+		this->headerPageNum = metaPageNo;
+		this->rootPageNum = metaInfo->rootPageNo;
+std::cout<<"if: metaInfo pageNo: " << metaPageNo <<std::endl;
+std::cout<<"if: root pageNo: " <<  metaInfo->rootPageNo<<std::endl;
+		this->file = indexFileCastToFile;
+		this->bufMgr->unPinPage(this->file, metaPageNo, false);
 
-// 	} else
-	//{
+	} else
+	{
 		// create new index file
 		std::cout<< "Create new index file\n";
 		BlobFile* indexFile = new BlobFile(indexName, true);
@@ -86,7 +85,6 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 		PageId metaPageNo;
 		// allocate meta info page
 		this->bufMgr->allocPage(this->file, metaPageNo, metaPage);
-//std::cout<<"else: metaInfo pageNo: " << metaPageNo <<std::endl;
 		// first page of index file is meta page
 		// set page number of meta page
 		this->headerPageNum = metaPageNo;
@@ -125,7 +123,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 			std::cout << "inside btree Read all records" << std::endl;
 		}
 		delete fScan;
-	//}
+	}
 }
 
 
@@ -156,7 +154,6 @@ PageId BTreeIndex::insertHelper(PageId pageNo,int key,RecordId rid, PageId newCh
 	Page *page;
 	bufMgr->readPage(file, pageNo, page);
 	//leaf Node
-
 	if(isLeaf(pageNo)){
 		newChildPageNo = insertIntoLeaf((LeafNodeInt*)page,key,rid,pageNo);
 		if(newChildPageNo!=0 && metaInfo.rootPageNo == pageNo){
@@ -175,7 +172,7 @@ PageId BTreeIndex::insertHelper(PageId pageNo,int key,RecordId rid, PageId newCh
 			newRootNode->pageNoArray[0]=pageNo;
 			newRootNode->pageNoArray[1]=newChildPageNo;
 			newChildPageNo=0;//already resolve split
-			std::cout << "metaInfo.rootPageNo: "<<metaInfo.rootPageNo<< std::endl;
+			//std::cout << "metaInfo.rootPageNo: "<<metaInfo.rootPageNo<< std::endl;
 		}
 		return newChildPageNo;
 	}else{
@@ -208,7 +205,6 @@ PageId BTreeIndex::insertHelper(PageId pageNo,int key,RecordId rid, PageId newCh
 		}
 		//recursiively insert to child
 		newChildPageNo = insertHelper(childPageNo,key,rid,newChildPageNo);
-std::cout << "NewchildpageNo "<<newChildPageNo<< std::endl;
 		//no spliting
 		if(newChildPageNo==0){
 			return newChildPageNo; 
@@ -220,12 +216,8 @@ std::cout << "NewchildpageNo "<<newChildPageNo<< std::endl;
 				bufMgr->readPage(file,newChildPageNo,newChildPage);
 				NonLeafNodeInt* newChildNode = (NonLeafNodeInt*) newChildPage;
 				newChildPageNo = insertIntoNonLeaf(currentNode,newChildNode->keyArray[0],newChildPageNo);
-
 				//current Node is root, build a new node
 				if(newChildPageNo!=0 && metaInfo.rootPageNo==pageNo){
-					std::cout << "split in root"<< std::endl;
-					std::cout << "metaInfo.rootPageNo: "<<metaInfo.rootPageNo<< std::endl;
-					std::cout << "pageNo: "<<pageNo<< std::endl;
 					NonLeafNodeInt* newRootNode;
 					PageId newRootPageNo;
 					bufMgr->allocPage(file,newRootPageNo,(Page *&)newRootNode);	
@@ -412,7 +404,6 @@ PageId BTreeIndex::insertIntoLeaf(LeafNodeInt *leafNode, int key, const RecordId
 	PageId newPageNo=0;
 	//split if full
 	if(isLeafFull(leafNode)){
-		//std::cout << "*******leafFull*******"<< std::endl;
 		newPageNo = splitLeaf(leafNode,INTARRAYLEAFSIZE/2);
 		Page* newPage;
 		bufMgr->readPage(file,newPageNo,newPage);
@@ -430,6 +421,7 @@ PageId BTreeIndex::insertIntoLeaf(LeafNodeInt *leafNode, int key, const RecordId
 		
 		for(int i=leafNodeRecNo(leafNode)-1;i>=insertIndex;i--){
 			leafNode->keyArray[i+1]=leafNode->keyArray[i];
+			leafNode->ridArray[i+1]=leafNode->ridArray[i];
 		}
 		leafNode->keyArray[insertIndex] = key;
 		leafNode->ridArray[insertIndex] = rid;
@@ -451,6 +443,9 @@ PageId BTreeIndex::insertIntoNonLeaf(NonLeafNodeInt *nonLeafNode,int key,PageId 
 			break;
 		}
 	}
+	if(key>nonLeafNode->keyArray[nonLeafNodeRecNo(nonLeafNode)-1]){
+		insertIndex=nonLeafNodeRecNo(nonLeafNode);
+	}
 	PageId newPageNo=0;
 	//split if full
 	if(isNonLeafFull(nonLeafNode)){
@@ -470,6 +465,7 @@ PageId BTreeIndex::insertIntoNonLeaf(NonLeafNodeInt *nonLeafNode,int key,PageId 
 		//if leaf node is not full, shift the rest and directly insert
 		for(int i=nonLeafNodeRecNo(nonLeafNode)-1;i>=insertIndex;i--){
 			nonLeafNode->keyArray[i+1]=nonLeafNode->keyArray[i];
+			nonLeafNode->pageNoArray[i+2]=nonLeafNode->pageNoArray[i+1];
 		}
 		nonLeafNode->keyArray[insertIndex] = key;
 		nonLeafNode->pageNoArray[insertIndex+1]=pid;
@@ -543,13 +539,6 @@ std::cout << "splitLeaf" << std::endl;
 		leafNode->ridArray[i].page_number=0;
 		leafNode->ridArray[i].slot_number=0;
 	}
-	
-	// //copy to new node
-  	// memcpy(&newLeafNode->keyArray, &leafNode->keyArray[splitIndex], (INTARRAYLEAFSIZE - splitIndex) * sizeof(int));
-  	// memcpy(&newLeafNode->ridArray, &leafNode->ridArray[splitIndex], (INTARRAYLEAFSIZE - splitIndex) * sizeof(RecordId));
-	// //remove from old leafNode
-  	// memset(&leafNode->keyArray[splitIndex], 0, (INTARRAYLEAFSIZE - splitIndex) * sizeof(int));
-  	// memset(&leafNode->ridArray[splitIndex], 0, (INTARRAYLEAFSIZE - splitIndex) * sizeof(RecordId));
 
 	//set the sibling
 	newLeafNode->rightSibPageNo=leafNode->rightSibPageNo;
