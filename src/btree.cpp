@@ -346,13 +346,12 @@ void BTreeIndex::scanNext(RecordId& outRid)
 	
 	//read from currentNode
 	LeafNodeInt* currentNode = (LeafNodeInt*) this->currentPageData;
-	std::cout << "scanNext currentNode->keyArray[0]: "<< currentNode->keyArray[0] << std::endl;
 	// next entry still satisfies criteria
 	if (currentNode->keyArray[nextEntry] <= this->highValInt)
 	{
-		outRid.page_number = this->currentPageNum;
-		outRid.slot_number = this->nextEntry;
-		//outRid = currentNode->ridArray[nextEntry];
+		// outRid.page_number = this->currentPageNum;
+		// outRid.slot_number = this->nextEntry;
+		outRid = currentNode->ridArray[nextEntry];
 	}
 	else
 	{
