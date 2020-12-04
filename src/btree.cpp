@@ -40,73 +40,71 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 	idxStr << relationName << '.' << attrByteOffset;
 	std::string indexName = idxStr.str(); // name of index file
 	outIndexName = indexName;
-/*
+
 	// open index file if it exists
  	if (File::exists(indexName))
 	{
-		relationName.copy(metaInfo.relationName, 20, 0);
-		std::cout<< "index file exists\n";
+	//	relationName.copy(metaInfo.relationName, 20, 0);
 		BlobFile* indexFile = new BlobFile(outIndexName, false);
 		// read existing metapage
 		File* indexFileCastToFile = (File*) indexFile; // cast indexFile to File object
 		Page* metaPage;
 		PageId metaPageNo = indexFile->getFirstPageNo(); 
 		this->bufMgr->readPage(indexFileCastToFile, metaPageNo, metaPage);
-		std::cout<<"reached metapage check\n";
-		std::cout<<"metaInfo relationName: " << metaInfo.relationName[0] <<std::endl;
-		IndexMetaInfo* metaInfo = (IndexMetaInfo*) metaPage;
-		std::cout<<metaInfo->relationName<<std::endl;
+		IndexMetaInfo* metaInfoPage = (IndexMetaInfo*) metaPage;
+		std::cout<<metaInfoPage->relationName<<std::endl;
 		// check whether existing metapage data matches construction parameters
-		std::cout<< "Check started\n";
-		if (metaInfo->relationName != relationName || metaInfo->attrByteOffset != attrByteOffset
-				|| metaInfo->attrType != attrType)
+		
+		if (metaInfoPage->relationName != relationName || metaInfoPage->attrByteOffset != attrByteOffset
+				|| metaInfoPage->attrType != attrType)
 		{
-			std::cout<< "Enter if statement\n";
 			this->bufMgr->unPinPage(indexFileCastToFile, metaPageNo, false);
 			throw BadIndexInfoException("Index file exists but metapage data don't match construction parameters");
 		}
-		std::cout<< "Check ended\n";
+		
 		this->headerPageNum = metaPageNo;
-		this->rootPageNum = metaInfo->rootPageNo;
-std::cout<<"if: metaInfo pageNo: " << metaPageNo <<std::endl;
-std::cout<<"if: root pageNo: " <<  metaInfo->rootPageNo<<std::endl;
+		this->rootPageNum = metaInfoPage->rootPageNo;
 		this->file = indexFileCastToFile;
 		this->bufMgr->unPinPage(this->file, metaPageNo, false);
 
 	} else
 	{
-	*/
 		// create new index file
-		std::cout<< "Create new index file\n";
-		BlobFile* indexFile = new BlobFile(indexName, true);
-		File* indexFileCastToFile = (File*) indexFile;
-		this->file = indexFileCastToFile;
+		BlobFile* indexFile = new BlobFile(outIndexName, true);
+		
+		this->file = (File*) indexFile;
 		// create meta page
 		Page* metaPage;
 		PageId metaPageNo;
 		// allocate meta info page
 		this->bufMgr->allocPage(this->file, metaPageNo, metaPage);
+		IndexMetaInfo* metaInfoPage = (IndexMetaInfo*) metaPage;
 		// first page of index file is meta page
-		// set page number of meta page
-		this->headerPageNum = metaPageNo;
 		// cast metaPage to IndexMetaInfo struct and set its variables 
 		metaInfo.attrByteOffset = attrByteOffset;
 		metaInfo.attrType = attrType;
 		strcpy(metaInfo.relationName, relationName.c_str());
+
+		strcpy(metaInfoPage->relationName, relationName.c_str());
+		metaInfoPage->attrByteOffset = attrByteOffset;
+		metaInfoPage->attrType = attrType;
+		this->headerPageNum = metaPageNo;
 		// allocate page for root
 		Page* rootPage;
 		PageId rootPageNo;
 		this->bufMgr->allocPage(this->file, rootPageNo, rootPage);
-		this->rootPageNum = rootPageNo;
+		
 		metaInfo.rootPageNo = rootPageNo;
+		metaInfoPage->rootPageNo = rootPageNo;
 		this->rootPageNum = rootPageNo;
 		// after alloc, rootPage need not be a page object
 		// so cast to leaf node
 		LeafNodeInt* rootPageCastToLeaf = (LeafNodeInt *) rootPage;
 		rootPageCastToLeaf->rightSibPageNo = Page::INVALID_NUMBER;
 		rootPageCastToLeaf->level = -1;
+		this->bufMgr->unPinPage(this->file, rootPageNo, true);
 		FileScan* fScan = new FileScan(relationName, bufMgrIn);
-		
+	/*	
 		try
 		{
 			RecordId scanRid;
@@ -123,11 +121,8 @@ std::cout<<"if: root pageNo: " <<  metaInfo->rootPageNo<<std::endl;
 		catch(const EndOfFileException &e)
 		{
 			std::cout << "inside btree Read all records" << std::endl;
-		}
-		std::cout << "this->headerPageNum: " << this->headerPageNum <<std::endl;
-		std::cout << "this->rootPageNum: " << this->rootPageNum <<std::endl;
-		delete fScan;
-//	}
+		}*/
+	}
 }
 
 
@@ -281,59 +276,59 @@ void BTreeIndex::startScan(const void* lowValParm,
 	this->highValInt = *((int*) highValParm);
 	this->lowOp = lowOpParm;
 	this->highOp = highOpParm;
-	std::cout << "----------\n";
-	std::cout << "start startScan\n";
-	std::cout << "this->headerPageNum: " << this->headerPageNum <<std::endl;
-	std::cout << "this->rootPageNum: " << this->rootPageNum <<std::endl;
-	std::cout << "metaInfo->rootPageNo: " << metaInfo.rootPageNo << std::endl;
+//	std::cout << "----------\n";
+//	std::cout << "start startScan\n";
+//	std::cout << "this->headerPageNum: " << this->headerPageNum <<std::endl;
+//	std::cout << "this->rootPageNum: " << this->rootPageNum <<std::endl;
+//	std::cout << "metaInfo->rootPageNo: " << metaInfo.rootPageNo << std::endl;
 	NonLeafNodeInt* currentNode;
 	// find the leaf ndoe to begin search
 	// if root is leaf, root is the node we will search
 	if (this->isLeaf(metaInfo.rootPageNo) == true)
 	{
-		std::cout << "root is leaf\n";
+//		std::cout << "root is leaf\n";
 		this->currentPageNum = metaInfo.rootPageNo;
 		this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
 		currentNode = (struct NonLeafNodeInt*) this->currentPageData;
-		std::cout << "root key: " << currentNode->keyArray[0] << std::endl;
-		std::cout << "end if statement in startScan\n";
+//		std::cout << "root key: " << currentNode->keyArray[0] << std::endl;
+//		std::cout << "end if statement in startScan\n";
 	}
 	else
 	{
-		std::cout << "start searching from root" <<std::endl;
+//		std::cout << "start searching from root" <<std::endl;
 		this->currentPageNum = metaInfo.rootPageNo; // start searching from root
-		std::cout << "this->currentPageNum before while loop " << this->currentPageNum << std::endl;
+//		std::cout << "this->currentPageNum before while loop " << this->currentPageNum << std::endl;
 		// traverse tree until leaf is found
 		while (this->isLeaf(this->currentPageNum) == false)
 		{
-			std::cout << "enter while loop in startScan\n";
-			std::cout << "this->currentPageNum: " << this->currentPageNum << std::endl;
+//			std::cout << "enter while loop in startScan\n";
+//			std::cout << "this->currentPageNum: " << this->currentPageNum << std::endl;
 			this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
 			currentNode = (struct NonLeafNodeInt*) this->currentPageData;
 			for (int i = 0; i < nonLeafNodeRecNo(currentNode)-1; i++)
 			{
-				std::cout <<"----------\n";
-				std::cout <<"left value: " << currentNode->keyArray[i] <<std::endl;
-				std::cout << "right value: " << currentNode->keyArray[i+1] <<std::endl;
-				std::cout << "lowVal: " << this->lowValInt <<std::endl;
+//				std::cout <<"----------\n";
+//				std::cout <<"left value: " << currentNode->keyArray[i] <<std::endl;
+//				std::cout << "right value: " << currentNode->keyArray[i+1] <<std::endl;
+//				std::cout << "lowVal: " << this->lowValInt <<std::endl;
 				// got to right pointer
 				if (currentNode->keyArray[i] <= this->lowValInt && currentNode->keyArray[i+1] >= this->lowValInt)
 				{
-					std::cout << "found slot\n";
+//					std::cout << "found slot\n";
 					this->currentPageNum = currentNode->pageNoArray[i+1];
 					break;
 				}
 				// go to left pointer
 				else if (currentNode->keyArray[i] > this->lowValInt)
 				{
-					std::cout << "go to left pointer\n";
-					std::cout << "new currentPageNum: " << currentNode->pageNoArray[i] <<std::endl;
+//					std::cout << "go to left pointer\n";
+//					std::cout << "new currentPageNum: " << currentNode->pageNoArray[i] <<std::endl;
 					this->currentPageNum = currentNode->pageNoArray[i];
 					break;
 				}
 				else
 				{
-					std::cout << "keep searching\n";
+//					std::cout << "keep searching\n";
 					continue;
 				}
 	//		this->currentPageNum = currentNode->pageNoArray[nonLeafNodeRecNo(currentNode)]-1;
@@ -349,7 +344,7 @@ void BTreeIndex::startScan(const void* lowValParm,
 	std::cout << "this->currentPageNum at end of startScan: " << this->currentPageNum <<std::endl;
 	// save leaf node in this->currentPageData
 	this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
-	std::cout << "this->isLeaf(currentPageNum): " << this->isLeaf(currentPageNum) <<std::endl;
+//	std::cout << "this->isLeaf(currentPageNum): " << this->isLeaf(currentPageNum) <<std::endl;
 	this->nextEntry = 0; // just initialized scan, so next entry to insert is at slot 0 of page
 }
 
@@ -487,6 +482,7 @@ void BTreeIndex::scanNext(RecordId& outRid)
 			}	
 		}
 	}
+	
 //	std::cout << "evaluation done, now move nextEntry pointer\n";
 	if (this->nextEntry+1 >= leafNodeRecNo(currentNode))
 	{
@@ -501,6 +497,7 @@ void BTreeIndex::scanNext(RecordId& outRid)
 	//	std::cout << "increment nextEntry pointer without moving to sibling\n";
 		this->nextEntry++;
 	}
+	
 	std::cout <<"end scanNext\n";
 	// found key entry that exists and satisfies scan criteria
 	// save corresponding record in outRid
