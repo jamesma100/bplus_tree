@@ -100,7 +100,6 @@ std::cout<<"if: root pageNo: " <<  metaInfo->rootPageNo<<std::endl;
 		this->rootPageNum = rootPageNo;
 		metaInfo.rootPageNo = rootPageNo;
 		this->rootPageNum = rootPageNo;
-		this->rootPageNum = rootPageNo;
 		// after alloc, rootPage need not be a page object
 		// so cast to leaf node
 		LeafNodeInt* rootPageCastToLeaf = (LeafNodeInt *) rootPage;
