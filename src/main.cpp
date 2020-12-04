@@ -41,7 +41,7 @@ using namespace badgerdb;
 // -----------------------------------------------------------------------------
 const std::string relationName = "relA";
 //If the relation size is changed then the second parameter 2 chechPassFail may need to be changed to number of record that are expected to be found during the scan, else tests will erroneously be reported to have failed.
-const int	relationSize = 5;
+const int	relationSize = 5000;
 std::string intIndexName, doubleIndexName, stringIndexName;
 
 // This is the structure for tuples in the base relation
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 		}
 		catch(const EndOfFileException &e)
 		{
-			std::cout << "Read all records" << std::endl;
+			std::cout << "inside main Read all records" << std::endl;
 		}
 	}
 	// filescan goes out of scope here, so relation file gets closed.
@@ -222,7 +222,6 @@ void createRelationForward()
 			}
 		}
   }
-
 	file1->writePage(new_page_number, new_page);
 }
 
@@ -363,6 +362,7 @@ void intTests()
 {
   std::cout << "Create a B+ Tree index on the integer field" << std::endl;
   BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
+  
 
 	// run some tests
 	checkPassFail(intScan(&index,25,GT,40,LT), 14)
