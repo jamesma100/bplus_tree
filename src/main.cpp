@@ -41,7 +41,7 @@ using namespace badgerdb;
 // -----------------------------------------------------------------------------
 const std::string relationName = "relA";
 //If the relation size is changed then the second parameter 2 chechPassFail may need to be changed to number of record that are expected to be found during the scan, else tests will erroneously be reported to have failed.
-const int	relationSize = 5;
+const int	relationSize = 5000;
 std::string intIndexName, doubleIndexName, stringIndexName;
 
 // This is the structure for tuples in the base relation
@@ -69,6 +69,7 @@ void createRelationRandom();
 void intTests();
 int intScan(BTreeIndex *index, int lowVal, Operator lowOp, int highVal, Operator highOp);
 void indexTests();
+void testScan();
 void test1();
 void test2();
 void test3();
@@ -133,7 +134,7 @@ int main(int argc, char **argv)
 	// filescan goes out of scope here, so relation file gets closed.
 
 	File::remove(relationName);
-
+//	testScan();
 	test1();
 	test2();
 	test3();
@@ -143,7 +144,13 @@ int main(int argc, char **argv)
 
   return 1;
 }
-
+void testScan()
+{
+	std::cout << "---------------------" << std::endl;
+        std::cout << "createRelationForward" << std::endl;
+	createRelationForward();
+	BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
+}
 void test1()
 {
 	// Create a relation with tuples valued 0 to relationSize and perform index tests 
@@ -402,6 +409,7 @@ int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operato
 		try
 		{
 			index->scanNext(scanRid);
+			std::cout <<"attempt to read page with scanRid.page_number\n";
 			bufMgr->readPage(file1, scanRid.page_number, curPage);
 			RECORD myRec = *(reinterpret_cast<const RECORD*>(curPage->getRecord(scanRid).data()));
 			bufMgr->unPinPage(file1, scanRid.page_number, false);
