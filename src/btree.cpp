@@ -278,10 +278,6 @@ PageId BTreeIndex::insertHelper(PageId pageNo,int key,RecordId rid, PageId newCh
 	
 }
 
-// -----------------------------------------------------------------------------
-// BTreeIndex::startScan
-// -----------------------------------------------------------------------------
-
 void BTreeIndex::startScan(const void* lowValParm,
 				   const Operator lowOpParm,
 				   const void* highValParm,
@@ -305,81 +301,65 @@ void BTreeIndex::startScan(const void* lowValParm,
 	this->highValInt = *((int*) highValParm);
 	this->lowOp = lowOpParm;
 	this->highOp = highOpParm;
-	// std::cout << "----------\n";
-	// std::cout << "start startScan\n";
-	// std::cout << "this->headerPageNum: " << this->headerPageNum <<std::endl;
-	// std::cout << "this->rootPageNum: " << this->rootPageNum <<std::endl;
-	// std::cout << "metaInfo->rootPageNo: " << metaInfo.rootPageNo << std::endl;
 	NonLeafNodeInt* currentNode;
+	
 	// find the leaf ndoe to begin search
 	// if root is leaf, root is the node we will search
 	if (this->isLeaf(metaInfo.rootPageNo) == true)
 	{
-		 std::cout << "root is leaf\n";
+		bufMgr->unPinPage(file,this->currentPageNum,false);
 		this->currentPageNum = metaInfo.rootPageNo;
-		 std::cout << "this->currentPageNum: " << this->currentPageNum << std::endl;
 		this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
+		this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
 		currentNode = (struct NonLeafNodeInt*) this->currentPageData;
-		// std::cout << "root key: " << currentNode->keyArray[0] << std::endl;
-		// std::cout << "end if statement in startScan\n";
 	}
 	else
 	{
-		// std::cout << "start searching from root" <<std::endl;
 		this->currentPageNum = metaInfo.rootPageNo; // start searching from root
-		//std::cout << "this->currentPageNum before while loop " << this->currentPageNum << std::endl;
 		// traverse tree until leaf is found
 		while (this->isLeaf(this->currentPageNum) == false)
 		{
-			 std::cout << "enter while loop in startScan\n";
-			 std::cout << "this->currentPageNum: " << this->currentPageNum << std::endl;
+			bufMgr->unPinPage(file,this->currentPageNum,false);
 			this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
 			currentNode = (struct NonLeafNodeInt*) this->currentPageData;
-			std::cout << "unpin current: " << currentPageNum << std::endl;
-			this->bufMgr->unPinPage(file,currentPageNum,false);
+			this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
+
 			for (int i = 0; i < nonLeafNodeRecNo(currentNode)-1; i++)
 			{
-				// std::cout <<"----------\n";
-				// std::cout <<"left value: " << currentNode->keyArray[i] <<std::endl;
-				// std::cout << "right value: " << currentNode->keyArray[i+1] <<std::endl;
-				// std::cout << "lowVal: " << this->lowValInt <<std::endl;
 				// got to right pointer
 				if (currentNode->keyArray[i] <= this->lowValInt && currentNode->keyArray[i+1] >= this->lowValInt)
 				{
-					 std::cout << "go right\n";
-					 std::cout << "this->currentPageNum: " << this->currentPageNum << std::endl;
-					 this->bufMgr->unPinPage(this->file,currentNode->pageNoArray[i],false);
-					std::cout << "unpinPage: " << currentNode->pageNoArray[i] <<std::endl;
+			//		this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
 					this->currentPageNum = currentNode->pageNoArray[i+1];
-					
 					break;
 				}
 				// go to left pointer
 				else if (currentNode->keyArray[i] > this->lowValInt)
 				{
-					 std::cout << "go left\n";
-					// std::cout << "new currentPageNum: " << currentNode->pageNoArray[i] <<std::endl;
+			//		this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
 					this->currentPageNum = currentNode->pageNoArray[i];
 					break;
 				}
-	//		this->currentPageNum = currentNode->pageNoArray[nonLeafNodeRecNo(currentNode)]-1;
-			this->bufMgr->unPinPage(this->file,currentNode->pageNoArray[i],false);
-			std::cout << "unpinPage: " << currentNode->pageNoArray[i] <<std::endl;
-		
+				else
+				{
+					continue;
+				}
 			}
+
+		
 		}
+		//
 	}
 	if (this->currentPageNum == metaInfo.rootPageNo)
 	{
 		throw NoSuchKeyFoundException();
 	}
-	//std::cout << "this->currentPageNum at end of startScan: " << this->currentPageNum <<std::endl;
 	// save leaf node in this->currentPageData
 	this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
-	std::cout << "start scan readPage: " << this->currentPageNum <<std::endl;
-	//std::cout << "this->isLeaf(currentPageNum): " << this->isLeaf(currentPageNum) <<std::endl;
+	this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
 	this->nextEntry = 0; // just initialized scan, so next entry to insert is at slot 0 of page
 }
+
 
 // -----------------------------------------------------------------------------
 // BTreeIndex::scanNext
@@ -407,8 +387,6 @@ void BTreeIndex::scanNext(RecordId& outRid)
 					if (currentNode->keyArray[nextEntry] < this->highValInt)
 					{
 						outRid = currentNode->ridArray[nextEntry];
-						// outRid.page_number = this->currentPageNum;
-						// outRid.slot_number = this->nextEntry;
 						break;
 					}
 					// next entry not <= upper bound, so done
@@ -423,8 +401,6 @@ void BTreeIndex::scanNext(RecordId& outRid)
 					if (currentNode->keyArray[nextEntry] <= this->highValInt)
                                         {
 											outRid = currentNode->ridArray[nextEntry];
-                                                // outRid.page_number = this->currentPageNum;
-                                                // outRid.slot_number = this->nextEntry;
                                                 break;
                                         }
                                         // next entry not <= upper bound, so done
@@ -443,11 +419,9 @@ void BTreeIndex::scanNext(RecordId& outRid)
 					{
 						throw IndexScanCompletedException();
 					}
-							this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
                				this->currentPageNum = currentNode->rightSibPageNo;
                		 		this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
 							this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
-							std::cout << "scan next unpinPage 1 : " << this->currentPageNum <<std::endl;
                		 		currentNode = (LeafNodeInt*)this->currentPageData;
                 			this->nextEntry = 0; // start searching from beginning of new node
         			}
@@ -468,8 +442,6 @@ void BTreeIndex::scanNext(RecordId& outRid)
                         		if (currentNode->keyArray[nextEntry] < this->highValInt)
                        	 		{
 										outRid = currentNode->ridArray[nextEntry];
-                                		// outRid.page_number = this->currentPageNum;
-                                		// outRid.slot_number = this->nextEntry;
                                 		break;
                         		}
                         		// next entry not <= upper bound, so done
@@ -485,8 +457,6 @@ void BTreeIndex::scanNext(RecordId& outRid)
                                         if (currentNode->keyArray[nextEntry] <= this->highValInt)
                                         {
 											outRid = currentNode->ridArray[nextEntry];
-                                                // outRid.page_number = this->currentPageNum;
-                                                // outRid.slot_number = this->nextEntry;
                                                 break;
                                         }
                                         // next entry not <= upper bound, so done
@@ -497,8 +467,6 @@ void BTreeIndex::scanNext(RecordId& outRid)
 					}
 				}
 			}
-                	//outRid = currentNode->ridArray[nextEntry];
-                	//else if (currentNode->keyArray[nextEntry] > this->highValInt)
                 	// next entry not >= lower bound
                 	else
                 	{
@@ -508,45 +476,32 @@ void BTreeIndex::scanNext(RecordId& outRid)
                                		{
                                	        	throw IndexScanCompletedException();
                                 	}
-                                	//std::cout << "scanNext moving to sibling" << std::endl;
-									this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
                                 	this->currentPageNum = currentNode->rightSibPageNo;
                                 	this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
 									this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
-									std::cout << "scan next unpinPage 2 : " << this->currentPageNum <<std::endl;
                                 	currentNode = (LeafNodeInt*)this->currentPageData;
                                 	this->nextEntry = 0; // start searching from beginning of new node
                         	}
                         	else
                         	{
-                                	//std::cout << "increment nextEntry pointer without moving to sibling\n";
                                 	this->nextEntry++;
                         	}
 			}	
 		}
 	}
-//	std::cout << "evaluation done, now move nextEntry pointer\n";
 	if (this->nextEntry+1 >= leafNodeRecNo(currentNode))
 	{
-	//	std::cout << "scanNext moving to sibling" << std::endl;
-		this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
 		this->currentPageNum = currentNode->rightSibPageNo;
 		this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
 		this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
-		std::cout << "scan next unpinPage 3 : " << this->currentPageNum <<std::endl;
 		currentNode = (LeafNodeInt*)this->currentPageData;
 		this->nextEntry = 0; // start searching from beginning of new node
 	}
 	else
 	{
-	//	std::cout << "increment nextEntry pointer without moving to sibling\n";
 		this->nextEntry++;
 	}
-	//std::cout <<"end scanNext\n";
-	// found key entry that exists and satisfies scan criteria
-	// save corresponding record in outRid
 }
-
 
 // -----------------------------------------------------------------------------
 // BTreeIndex::endScan
