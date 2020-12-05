@@ -191,7 +191,7 @@ void test4()
         std::cout << "createRelationForward" << std::endl;
 	createRelationForward(10000);
 	indexTests();
-	deleteRelation;
+	deleteRelation();
 
 }
 void test5()
@@ -201,7 +201,7 @@ void test5()
         std::cout << "createRelationBackward" << std::endl;
         createRelationBackward(10000);
         indexTests();
-        deleteRelation;
+        deleteRelation();
 
 }
 void test6()
@@ -211,7 +211,7 @@ void test6()
         std::cout << "createRelationRandom" << std::endl;
         createRelationRandom(10000);
         indexTests();
-        deleteRelation;
+        deleteRelation();
 
 }
 
