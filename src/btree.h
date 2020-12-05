@@ -371,8 +371,9 @@ class BTreeIndex {
 	// ADDITIONAL METHODS
 	/**
 	 * Insert a key, rid pair into a leaf node
-	 * @param key key to insert
-	 * @param rid record id to insert
+	 * @param leafNode leaf node to insert into
+	 * @param key key of entry to insert
+	 * @param rid rid of entry to insert
 	 * @param pageNo page number of the leaf node to insert into
 	 */
 	PageId insertIntoLeaf(LeafNodeInt *leafNode, int key, const RecordId rid, const PageId pageNo);
@@ -380,15 +381,15 @@ class BTreeIndex {
 	/**
 	 * Insert a key, rid pair into a non-leaf node
 	 * @param key key to insert
-	 * @param rid record id to insert
 	 * @param pageNo page number of the leaf node to insert into
+	 * @param pid of corresponding page
 	 */
 	PageId insertIntoNonLeaf(NonLeafNodeInt *nonLeafNode,int key,PageId pid);
+	
 	/**
 	 * Split a leaf node into two when node is full and an insert is attempted
-	 * @param key key to insert
-	 * @param rid record id to insert
-	 * @param pageNo page number of leaf node to split
+	 * @param leafNode leaf node to split
+	 * @param splitIndex index to split at
 	 */
 	PageId splitLeaf(LeafNodeInt *leafNode,int splitIndex);
 	
@@ -401,11 +402,44 @@ class BTreeIndex {
 	 */
 	PageId splitNonLeaf(NonLeafNodeInt *nonLeafNode,int splitIndex);
 
+	/**
+	 * Returns the number of records currently in a leaf node
+	 * @param leafNode pointer to the leaf node desired
+	 */
 	int leafNodeRecNo(LeafNodeInt *leafNode);
+
+   	/**
+         * Returns the number of records currently in a non leaf node
+         * @param leafNode pointer to the non leaf node desired
+         */
 	int nonLeafNodeRecNo(NonLeafNodeInt *nonLeafNode);
+
+	/**
+	 * Returns true if leafNode is at full capacity, false otherwise
+	 * @param leafNode leaf node desired
+	 */
 	bool isLeafFull(LeafNodeInt *leafNode);
+	
+   	/**
+         * Returns true if none leaf node is at full capacity, false otherwise
+         * @param nonLeafNode non leaf node desired
+         */
 	bool isNonLeafFull(NonLeafNodeInt *nonLeafNode);
+
+	/**
+	 * Returns true if node is a leaf
+	 * @param pageNo page number of node desired
+	 * @return if page is leaf node
+	 */
 	bool isLeaf(PageId pageNo);
+
+	/**
+	 * Recursive method to insert a key and record
+	 * @param pageId page number to insert into
+	 * @param key key of entry
+	 * @param rid record id of entry
+	 * @param newPageNo new page number
+	 */
 	PageId insertHelper(PageId pageId,int key,RecordId rid,PageId newPageNo);
 };
 }
