@@ -63,9 +63,9 @@ BufMgr * bufMgr = new BufMgr(100);
 // Forward declarations
 // -----------------------------------------------------------------------------
 
-void createRelationForward();
-void createRelationBackward();
-void createRelationRandom();
+void createRelationForward(int relationSize);
+void createRelationBackward(int relationSize);
+void createRelationRandom(int relationSize);
 void intTests();
 int intScan(BTreeIndex *index, int lowVal, Operator lowOp, int highVal, Operator highOp);
 void indexTests();
@@ -73,6 +73,9 @@ void testScan();
 void test1();
 void test2();
 void test3();
+void test4();
+void test5();
+void test6();
 void errorTests();
 void deleteRelation();
 
@@ -139,25 +142,22 @@ int main(int argc, char **argv)
 	test2();
 	test3();
 	errorTests();
+	test4();
+	test5();
+	test6();
 
 	delete bufMgr;
 
   return 1;
 }
-void testScan()
-{
-	std::cout << "---------------------" << std::endl;
-        std::cout << "createRelationForward" << std::endl;
-	createRelationForward();
-	BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
-}
+
 void test1()
 {
 	// Create a relation with tuples valued 0 to relationSize and perform index tests 
 	// on attributes of all three types (int, double, string)
 	std::cout << "---------------------" << std::endl;
 	std::cout << "createRelationForward" << std::endl;
-	createRelationForward();
+	createRelationForward(relationSize);
 	indexTests();
 	deleteRelation();
 }
@@ -168,7 +168,7 @@ void test2()
 	// on attributes of all three types (int, double, string)
 	std::cout << "----------------------" << std::endl;
 	std::cout << "createRelationBackward" << std::endl;
-	createRelationBackward();
+	createRelationBackward(relationSize);
 	indexTests();
 	deleteRelation();
 }
@@ -179,16 +179,47 @@ void test3()
 	// on attributes of all three types (int, double, string)
 	std::cout << "--------------------" << std::endl;
 	std::cout << "createRelationRandom" << std::endl;
-	createRelationRandom();
+	createRelationRandom(relationSize);
 	indexTests();
 	deleteRelation();
+}
+
+void test4()
+{
+	// Create a large relation in forward order
+	std::cout << "--------------------" << std::endl;
+        std::cout << "createRelationForward" << std::endl;
+	createRelationForward(10000);
+	indexTests();
+	deleteRelation;
+
+}
+void test5()
+{
+        // Create a large relation in forward order
+        std::cout << "--------------------" << std::endl;
+        std::cout << "createRelationBackward" << std::endl;
+        createRelationBackward(10000);
+        indexTests();
+        deleteRelation;
+
+}
+void test6()
+{
+        // Create a large relation in forward order
+        std::cout << "--------------------" << std::endl;
+        std::cout << "createRelationRandom" << std::endl;
+        createRelationRandom(10000);
+        indexTests();
+        deleteRelation;
+
 }
 
 // -----------------------------------------------------------------------------
 // createRelationForward
 // -----------------------------------------------------------------------------
 
-void createRelationForward()
+void createRelationForward(int relationSize)
 {
 	std::vector<RecordId> ridVec;
   // destroy any old copies of relation file
@@ -236,7 +267,7 @@ void createRelationForward()
 // createRelationBackward
 // -----------------------------------------------------------------------------
 
-void createRelationBackward()
+void createRelationBackward(int relationSize)
 {
   // destroy any old copies of relation file
 	try
@@ -284,7 +315,7 @@ void createRelationBackward()
 // createRelationRandom
 // -----------------------------------------------------------------------------
 
-void createRelationRandom()
+void createRelationRandom(int relationSize)
 {
   // destroy any old copies of relation file
 	try
