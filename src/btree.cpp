@@ -307,7 +307,7 @@ void BTreeIndex::startScan(const void* lowValParm,
 	// if root is leaf, root is the node we will search
 	if (this->isLeaf(metaInfo.rootPageNo) == true)
 	{
-		bufMgr->unPinPage(file,this->currentPageNum,false);
+		bufMgr->unPinPage(file,metaInfo.rootPageNo,false);
 		this->currentPageNum = metaInfo.rootPageNo;
 		this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
 		this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
@@ -315,11 +315,12 @@ void BTreeIndex::startScan(const void* lowValParm,
 	}
 	else
 	{
+		bufMgr->unPinPage(file,metaInfo.rootPageNo,false);
 		this->currentPageNum = metaInfo.rootPageNo; // start searching from root
 		// traverse tree until leaf is found
 		while (this->isLeaf(this->currentPageNum) == false)
 		{
-			bufMgr->unPinPage(file,this->currentPageNum,false);
+			bufMgr->unPinPage(file,metaInfo.rootPageNo,false);
 			this->bufMgr->readPage(this->file, this->currentPageNum, this->currentPageData);
 			currentNode = (struct NonLeafNodeInt*) this->currentPageData;
 			this->bufMgr->unPinPage(this->file, this->currentPageNum, false);
